@@ -28,7 +28,6 @@ for line in lines:
 branch = run_cmd("git rev-parse --abbrev-ref HEAD")
 if not branch: branch = "Desconhecida"
 
-# Cálculo da Hierarquia Dinâmica com Datas
 def get_date(commit_sha):
     return run_cmd(f"git log -1 --format=%cd --date=format:'%d/%m/%Y' {commit_sha}")
 
@@ -49,42 +48,63 @@ html_out = f"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Relatório de Estudo de Commits - Evolução Arquitetural</title>
+<title>Commits Study Guide - Premium Greyscale</title>
 <style>
     :root {{
-        --bg-color: #ffffff;
-        --sidebar-bg: #000000;
-        --sidebar-text: #ffffff;
-        --text-color: #353740;
-        --text-strong: #000000;
-        --code-bg: #0d1117;
-        --border-color: #e5e5e5;
+        --bg-color: #fcfcfc;
+        --sidebar-bg: #fcfcfc;
+        --sidebar-text: #4a4a4a;
+        --text-color: #4a4a4a;
+        --text-strong: #1a1a1a;
+        --border-color: #e0e0e0;
         --card-bg: #ffffff;
-        --header-bg: #f7f7f8;
-        --topic-bg: #ffffff;
-        --conclusion-bg: #f7f7f8;
-        --diff-add: rgba(16, 163, 127, 0.15);
-        --diff-del: rgba(248, 81, 73, 0.15);
-        --diff-add-text: #10a37f;
-        --diff-del-text: #ff7b72;
-        --accent: #10a37f;
+        --header-bg: #f5f5f5;
+        --topic-bg: #f5f5f5;
+        --conclusion-bg: #f0f0f0;
+        --accent: #333333;
+        
+        /* GitHub Light Style Code Colors */
+        --code-bg: #f6f8fa;
+        --code-text: #24292f;
+        --diff-add-bg: #dafbe1;
+        --diff-add-text: #1a7f37;
+        --diff-del-bg: #ffebe9;
+        --diff-del-text: #cf222e;
+        --diff-info-bg: #ddf4ff;
+        --diff-info-text: #0969da;
+        --diff-header-bg: #24292f;
+        --diff-header-text: #ffffff;
     }}
     
     .dark-mode {{
-        --bg-color: #050505;
-        --text-color: #c5c5d2;
+        --bg-color: #121212;
+        --sidebar-bg: #121212;
+        --sidebar-text: #a0a0a0;
+        --text-color: #a0a0a0;
         --text-strong: #ffffff;
-        --border-color: #2d2d2d;
-        --card-bg: #000000;
-        --header-bg: #0d0d0d;
-        --topic-bg: #000000;
-        --conclusion-bg: #0d0d0d;
-        --accent: #10a37f;
+        --border-color: #2a2a2a;
+        --card-bg: #1a1a1a;
+        --header-bg: #1a1a1a;
+        --topic-bg: #121212;
+        --conclusion-bg: #252525;
+        --accent: #e0e0e0;
+        
+        /* GitHub Dark Style Code Colors */
+        --code-bg: #0d1117;
+        --code-text: #c9d1d9;
+        --diff-add-bg: rgba(46, 160, 67, 0.15);
+        --diff-add-text: #3fb950;
+        --diff-del-bg: rgba(248, 81, 73, 0.15);
+        --diff-del-text: #f85149;
+        --diff-info-bg: rgba(56, 139, 253, 0.1);
+        --diff-info-text: #8b949e;
+        --diff-header-bg: #2d2d2d;
+        --diff-header-text: #ffffff;
     }}
 
     body {{
         margin: 0;
-        font-family: 'Inter', -apple-system, system-ui, sans-serif;
+        font-family: 'Inter', system-ui, sans-serif;
         display: flex;
         height: 100vh;
         overflow: hidden;
@@ -95,7 +115,7 @@ html_out = f"""<!DOCTYPE html>
     }}
     
     .sidebar {{
-        width: 320px;
+        width: 300px;
         min-width: 150px;
         max-width: 500px;
         background-color: var(--sidebar-bg);
@@ -110,149 +130,87 @@ html_out = f"""<!DOCTYPE html>
     }}
     
     .resizer {{
-        width: 2px;
+        width: 4px;
         cursor: col-resize;
-        background-color: var(--border-color);
+        background-color: transparent;
         transition: background-color 0.2s;
         flex-shrink: 0;
         z-index: 20;
     }}
-    .resizer:hover, .resizer.dragging {{
-        background-color: var(--accent);
-        width: 4px;
-    }}
+    .resizer:hover, .resizer.dragging {{ background-color: var(--accent); }}
     
     .sidebar-header {{
-        padding: 32px 24px;
-        background-color: var(--sidebar-bg);
+        padding: 24px;
+        border-bottom: 1px solid var(--border-color);
+        background-color: var(--header-bg);
     }}
-    .sidebar-header h2 {{ 
-        margin: 0 0 16px 0; 
-        font-size: 1.1rem; 
-        font-weight: 600; 
-        letter-spacing: -0.02em;
-        text-transform: uppercase;
-        color: var(--accent);
-    }}
-    .sidebar-header p {{ 
-        margin: 8px 0 0 0; 
-        font-size: 0.75rem; 
-        color: #8e8ea0;
-        font-family: 'Courier New', monospace;
-    }}
+    .sidebar-header h2 {{ margin: 0; font-size: 1rem; font-weight: 700; text-transform: uppercase; color: var(--text-strong); }}
+    .sidebar-header .meta {{ margin-top: 12px; font-size: 0.7rem; color: var(--text-color); opacity: 0.8; }}
     
-    .nav-links {{
-        flex: 1;
-        overflow-y: auto;
-        padding: 0 12px 32px 12px;
-    }}
+    .nav-links {{ flex: 1; overflow-y: auto; padding: 16px 8px; }}
     .nav-links a {{
         display: block;
         padding: 10px 16px;
-        color: #acacbe;
+        color: var(--text-color);
         text-decoration: none;
         font-size: 0.85rem;
-        border-radius: 6px;
-        margin-bottom: 2px;
+        border-radius: 8px;
+        margin-bottom: 4px;
         white-space: normal;
         word-wrap: break-word;
-        line-height: 1.4;
-        transition: all 0.15s ease;
+        transition: all 0.2s;
+        border: 1px solid transparent;
     }}
-    .nav-links a:hover {{
-        background-color: #202123;
-        color: #fff;
-    }}
-    
-    .content {{
-        flex: 1;
-        overflow-y: auto;
-        padding: 64px 80px;
-        scroll-behavior: smooth;
-    }}
-    .commit-section {{
-        background: var(--card-bg);
-        margin-bottom: 100px;
-        max-width: 900px;
-    }}
-    .commit-header {{
-        margin-bottom: 40px;
-        padding-bottom: 24px;
-        border-bottom: 1px solid var(--border-color);
-    }}
-    .commit-header h1 {{ 
-        color: var(--text-strong); 
-        font-size: 2.2rem; 
-        margin: 0 0 16px 0; 
-        line-height: 1.1;
-        letter-spacing: -0.03em;
-        font-weight: 700;
-    }}
-    .tech-summary {{
-        font-size: 1.1rem;
-        color: var(--accent);
-        margin: 0;
-        font-weight: 500;
-    }}
-    
-    .commit-body {{ padding: 0; }}
-    
-    h3 {{ 
-        color: var(--text-strong); 
-        margin-top: 48px; 
-        margin-bottom: 24px;
-        font-size: 1.4rem;
-        font-weight: 600;
-        letter-spacing: -0.02em;
-    }}
-    
-    .topic {{ 
-        margin-bottom: 32px; 
-        padding: 0;
-    }}
-    .topic strong {{ 
-        color: var(--text-strong); 
-        display: block; 
-        margin-bottom: 12px; 
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #8e8ea0;
-    }}
-    .topic p {{ margin: 0; font-size: 1.05rem; }}
-    
-    .conclusion {{
-        background-color: var(--conclusion-bg);
-        border: 1px solid var(--border-color);
-        padding: 24px;
-        border-radius: 8px;
-        margin: 48px 0;
-    }}
-    .conclusion p {{ margin: 0; font-size: 1rem; color: var(--text-strong); }}
-    .conclusion strong {{ color: var(--accent); margin-right: 8px; }}
+    .nav-links a:hover {{ background-color: var(--topic-bg); border-color: var(--border-color); color: var(--text-strong); }}
+    .nav-links a.active {{ background-color: var(--accent); color: #fff; }}
 
     .theme-toggle {{
-        background: #202123;
-        border: 1px solid #444654;
-        color: #fff;
-        padding: 10px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.75rem;
-        margin-top: 24px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        width: 100%;
-        justify-content: center;
+        background: var(--topic-bg); border: 1px solid var(--border-color); color: var(--text-color);
+        padding: 8px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 16px; font-size: 0.8rem;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
         transition: all 0.2s;
     }}
-    .theme-toggle:hover {{ background: #444654; }}
+    .theme-toggle:hover {{ background: var(--border-color); color: var(--text-strong); }}
     
-    /* Code Diff Styles */
+    .content {{ flex: 1; overflow-y: auto; padding: 40px 60px; scroll-behavior: smooth; }}
+    .feed-container {{ width: 90%; margin: 0 auto; }}
+    
+    .commit-section {{
+        background: var(--card-bg);
+        margin-bottom: 60px;
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }}
+    
+    .commit-header {{ padding: 32px 40px; border-bottom: 1px solid var(--border-color); }}
+    .commit-header .sha {{
+        font-family: monospace; font-size: 0.8rem; color: var(--accent); background: var(--conclusion-bg);
+        padding: 4px 8px; border-radius: 4px; font-weight: 600; margin-bottom: 12px; display: inline-block;
+    }}
+    .commit-header h1 {{ color: var(--text-strong); font-size: 1.75rem; margin: 0; font-weight: 800; }}
+    
+    .commit-body {{ padding: 40px; }}
+    
+    .topic {{ margin-bottom: 32px; }}
+    .topic strong {{ color: var(--accent); display: block; margin-bottom: 12px; font-size: 0.8rem; text-transform: uppercase; font-weight: 700; }}
+    
+    .topic ul {{ margin: 0; padding-left: 20px; list-style-type: disc; }}
+    .topic ul li {{ margin-bottom: 12px; font-size: 1.05rem; color: var(--text-color); line-height: 1.5; }}
+    .topic ul li strong {{ display: inline; text-transform: none; font-size: inherit; color: var(--text-strong); letter-spacing: normal; margin-right: 4px; }}
+    .topic a {{ color: var(--accent); text-decoration: none; border-bottom: 1px dashed var(--accent); font-weight: 600; padding: 0 4px; border-radius: 4px; background: rgba(0, 0, 0, 0.05); }}
+    .topic a:hover {{ background: var(--accent); color: #fff; border-bottom-style: solid; }}
+    
+    .conclusion {{ background-color: var(--conclusion-bg); padding: 24px; border-radius: 12px; margin: 40px 0; border-left: 4px solid var(--accent); }}
+    .conclusion p {{ margin: 0; font-weight: 500; color: var(--text-strong); }}
+    
+    h3 {{ font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: var(--text-strong); border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }}
+
+    /* Code Diff Styles - Dynamic GitHub Style */
     pre.code-diff {{
         background-color: var(--code-bg);
-        color: #e6edf3;
+        color: var(--code-text);
         padding: 24px;
         border-radius: 12px;
         overflow-x: auto;
@@ -261,38 +219,37 @@ html_out = f"""<!DOCTYPE html>
         line-height: 1.6;
         margin: 0;
         border: 1px solid var(--border-color);
+        transition: all 0.2s;
     }}
-    .diff-line {{ display: flex; }}
-    .diff-line .text {{ padding-left: 5px; white-space: pre; }}
-    .diff-line.add {{ background-color: var(--diff-add); display: block; }}
-    .diff-line.add .text {{ color: var(--diff-add-text); }}
-    .diff-line.del {{ background-color: var(--diff-del); display: block; }}
-    .diff-line.del .text {{ color: var(--diff-del-text); }}
-    .diff-line.info {{ color: #565869; font-style: italic; border-top: 1px solid #2d2d2d; margin-top: 16px; padding-top: 16px; display: block; }}
+    .diff-line {{ display: block; padding: 0 16px; margin: 0 -24px; white-space: pre; background-color: transparent; }}
+    .diff-line.add {{ background-color: var(--diff-add-bg); color: var(--diff-add-text); }}
+    .diff-line.del {{ background-color: var(--diff-del-bg); color: var(--diff-del-text); }}
+    .diff-line.info {{ background-color: var(--diff-info-bg); color: var(--diff-info-text); padding-top: 12px; margin-top: 12px; }}
     
     .diff-line.file-header {{
-        background-color: rgba(16, 163, 127, 0.1);
-        color: var(--accent);
+        background-color: var(--diff-header-bg);
+        color: var(--diff-header-text);
         font-weight: 600;
-        border: 1px solid var(--accent);
-        border-radius: 4px;
-        margin-top: 32px;
-        padding: 8px 12px;
+        margin: 24px -24px 0 -24px;
+        padding: 8px 24px;
         display: block;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
+        border-top: 1px solid var(--border-color);
     }}
-    .diff-line.file-header:first-child {{ margin-top: 0; }}
+    .diff-line.file-header:first-child {{ margin-top: 0; border-top: none; }}
 </style>
 </head>
 <body>
 
 <div class="sidebar">
     <div class="sidebar-header">
-        <h2>Aulas de Arquitetura</h2>
-        <p><strong>Hierarquia:</strong> {hierarquia}</p>
-        <p><strong>Remoto:</strong> {remote}</p>
+        <h2>Study Guide</h2>
+        <div class="meta">
+            <div>Hierarquia: {hierarquia}</div>
+            <div>Remoto: {remote}</div>
+        </div>
         <button class="theme-toggle" id="themeToggle">
-            <span id="themeIcon">🌙</span> <span id="themeText">Modo Escuro</span>
+            <span id="themeIcon">🌙</span> <span id="themeText">Dark Mode</span>
         </button>
     </div>
     <div class="nav-links">
@@ -306,6 +263,7 @@ html_out += """
 </div>
 <div class="resizer" id="dragMe"></div>
 <div class="content">
+    <div class="feed-container">
 """
 
 for sha, msg in commit_data:
@@ -321,36 +279,41 @@ for sha, msg in commit_data:
         if line.startswith('diff --git'):
             formatted_diff += f'<div class="diff-line file-header">{safe_line}</div>'
         elif line.startswith('+') and not line.startswith('+++'):
-            formatted_diff += f'<div class="diff-line add"><span class="text">{safe_line}</span></div>'
+            formatted_diff += f'<div class="diff-line add">{safe_line}</div>'
         elif line.startswith('-') and not line.startswith('---'):
-            formatted_diff += f'<div class="diff-line del"><span class="text">{safe_line}</span></div>'
+            formatted_diff += f'<div class="diff-line del">{safe_line}</div>'
         elif line.startswith('diff ') or line.startswith('index ') or line.startswith('---') or line.startswith('+++') or line.startswith('@@ '):
             formatted_diff += f'<div class="diff-line info">{safe_line}</div>'
         else:
-            formatted_diff += f'<div class="diff-line"><span class="text">{safe_line}</span></div>'
+            formatted_diff += f'<div class="diff-line">{safe_line}</div>'
 
     m, i, c, a, c_aula = generate_analysis(msg)
 
     html_out += f'''
     <div class="commit-section" id="aula-{sha}">
         <div class="commit-header">
+            <div class="sha">{sha[:8]}</div>
             <h1>{html.escape(msg)}</h1>
-            <p class="tech-summary">{sha[:8]}</p>
         </div>
         
         <div class="commit-body">
             <div class="topic"><strong>Motivação</strong><p>{m}</p></div>
             <div class="topic"><strong>Implementação</strong><p>{i}</p></div>
-            <div class="topic"><strong>Conceitos e Documentação</strong><p>{c}</p></div>
-            <div class="topic"><strong>Alternativas e Refatoração</strong><p>{a}</p></div>
-            <div class="conclusion"><p><strong>Conclusão da Aula</strong> {c_aula}</p></div>
-            <h3>Código da Aula (Diff)</h3>
+            <div class="topic"><strong>Conceitos e Documentação</strong>{c}</div>
+            <div class="topic"><strong>Alternativas e Refatoração</strong>{a}</div>
+            
+            <div class="conclusion">
+                <p>💡 {c_aula}</p>
+            </div>
+            
+            <h3>Código da Aula</h3>
             <pre class="code-diff">{formatted_diff}</pre>
         </div>
     </div>
 '''
 
 html_out += """
+    </div>
 </div>
 
 <script>
@@ -394,14 +357,14 @@ html_out += """
         body.classList.toggle('dark-mode');
         const isDark = body.classList.contains('dark-mode');
         themeIcon.innerText = isDark ? '☀️' : '🌙';
-        themeText.innerText = isDark ? 'Modo Claro' : 'Modo Escuro';
+        themeText.innerText = isDark ? 'Light Mode' : 'Dark Mode';
         localStorage.setItem('theme', isDark ? 'dark' : 'light');
     });
 
     if (localStorage.getItem('theme') === 'dark') {
         body.classList.add('dark-mode');
         themeIcon.innerText = '☀️';
-        themeText.innerText = 'Modo Claro';
+        themeText.innerText = 'Light Mode';
     }
 </script>
 </body>
