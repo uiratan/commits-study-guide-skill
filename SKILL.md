@@ -1,48 +1,46 @@
 ---
 name: commits-study-guide
-description: "Gera um relatório HTML interativo estruturado como um curso de arquitetura, detalhando a evolução do código commit a commit. Use quando o usuário solicitar um relatório de commits, histórico de estudo ou guia de migração desde um commit específico."
+description: "Gera um relatório HTML premium (Feed Greyscale) detalhando a evolução do código commit a commit com análise técnica profunda. Use para guias de estudo, relatórios de arquitetura ou análise de mudanças desde um SHA específico."
 license: CC-BY-4.0
 metadata:
   author: Gemini CLI
-  version: 1.0.0
+  version: 7.0.0
 ---
 
-# Generate Git Study Guide
+# Commits Study Guide (v7 - Arquitetura Premium Limpa)
 
-Esta skill gera um guia de estudo profundo a partir do histórico de commits do Git. Ela transforma alterações de código em "aulas" com explicações detalhadas sobre motivação, implementação, conceitos técnicos e alternativas.
+Esta skill transforma o histórico do Git em um curso de arquitetura visualmente rico e tecnicamente denso.
 
-## Instruções
+## 🚀 Fluxo de Execução (OBRIGATÓRIO)
 
-### Passo 1: Preparação dos Parâmetros
-Identifique os seguintes parâmetros com o usuário:
-- **Commit Inicial:** O SHA ou referência onde o estudo deve começar (Obrigatório).
-- **Commit Final:** O SHA ou referência final (Padrão: `HEAD`).
-- **Arquivo de Saída:** O nome do arquivo `.html` (Padrão: `relatorio_estudo_commits.html`).
+Você é um Arquiteto de Software sênior. O sucesso deste relatório depende da sua capacidade de explicar o "porquê" de cada mudança.
 
-### Passo 2: Execução do Motor de Geração
-O agente deve ler o script `assets/report_engine.py` e adaptá-lo para os commits solicitados. O script deve:
-1. Extrair os commits no range `[Commit Inicial]^..[Commit Final]`.
-2. Identificar a hierarquia de branches (`master -> intermediaria -> atual`) e as datas de nascimento (commit de divergência) formatadas como `dd/mm/yyyy`.
+### Passo 1: Análise Técnica Profunda
+Para **CADA** commit no intervalo solicitado:
+1.  Execute `git show SHA` para analisar as mudanças reais de código.
+2.  Redija uma análise técnica contendo:
+    *   **Motivação**: Por que essa mudança foi feita? (Seja específico sobre o problema resolvido).
+    *   **Implementação**: Como foi feito tecnicamente? Quais classes/arquivos foram o foco?
+    *   **Conceitos**: Explique as tecnologias envolvidas e inclua **links obrigatórios** 🔗 para a documentação oficial.
+    *   **Alternativas**: O que mais poderia ter sido feito e quais os prós/contras?
+    *   **Conclusão**: O aprendizado chave deste commit.
 
-### Passo 3: Enriquecimento das Aulas
-Para cada commit identificado, o agente deve analisar a mensagem do commit e o diff para gerar:
-- **Motivação:** Por que essa mudança foi feita?
-- **Implementação:** Como a alteração foi executada?
-- **Conceitos e Documentação:** Detalhamento técnico (ex: tags Maven, especificações Jakarta EE).
-- **Alternativas e Refatoração:** Outras formas de resolver e prós/contras.
+### Passo 2: Geração do Payload
+Prepare um objeto JSON contendo todas as análises. Use o SHA completo como chave.
 
-### Visual e Estética
-O relatório gerado deve obrigatoriamente seguir o padrão:
-- Sidebar redimensionável à esquerda com títulos completos (quebra de linha).
-- Hierarquia de branches com datas no formato `dd/mm/yyyy`.
-- Realce de sintaxe simulado para código Java e XML.
-- Estrutura de tópicos: Motivação, Implementação, Conceitos, Alternativas e Conclusão.
+### Passo 3: Geração do Relatório
+Injete o payload via variável de ambiente `ANALYSIS_PAYLOAD` e execute o motor:
 
-## Exemplo de Uso
-Usuário diz: "Gere um relatório de estudo do commit a1b2c3d até agora"
+```bash
+export COMMIT_INICIAL="SHA"
+export ANALYSIS_PAYLOAD='SEU_JSON_AQUI'
+export OUTPUT_FILE="NOME.html"
+python3 /home/uira/.gemini/skills/commits-study-guide/assets/report_engine.py
+```
 
-Ações:
-1. Localiza o script nos assets da skill.
-2. Calcula a hierarquia de branches e datas.
-3. Analisa as mudanças entre `a1b2c3d` e `HEAD`.
-4. Gera o arquivo HTML com o visual padrão (sidebar redimensionável, CSS moderno).
+## 🎨 Visual e Comportamental
+- **Estética**: Premium Greyscale (TechLeads Club Style).
+- **Dark Mode**: 100% funcional via JavaScript local (persiste no navegador).
+- **Código**: Dinâmico GitHub Light/Dark acompanhando o tema da página.
+- **Hierarquia**: Automática `main/master -> atual`.
+- **Zero Lixo**: Sem arquivos temporários no projeto.
