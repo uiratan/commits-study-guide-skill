@@ -3,7 +3,7 @@ import html
 import sys
 import os
 
-# Parâmetros Passados pelo Gemini (ou defaults)
+# Parâmetros Passados pelo Gemini
 COMMIT_INICIAL = os.getenv("COMMIT_INICIAL", "f6ae3c0a1301e28720dd0ca884a963b1635b95cf")
 COMMIT_FINAL = os.getenv("COMMIT_FINAL", "HEAD")
 OUTPUT_FILE = os.getenv("OUTPUT_FILE", "relatorio_estudo_commits.html")
@@ -32,27 +32,16 @@ if not branch: branch = "Desconhecida"
 def get_date(commit_sha):
     return run_cmd(f"git log -1 --format=%cd --date=format:'%d/%m/%Y' {commit_sha}")
 
-# Identificar o ponto entre Master e Intermediária (tentativa baseada em nomes comuns)
 mbase_10_master = run_cmd("git merge-base origin/10.0.x origin/master")
-if not mbase_10_master: mbase_10_master = run_cmd("git merge-base HEAD origin/master")
-
 date_10_master = get_date(mbase_10_master) if mbase_10_master else "????"
-
-# Identificar o ponto entre Intermediária e a Branch Atual
-mbase_atual_10 = run_cmd(f"git merge-base HEAD origin/10.0.x")
-if not mbase_atual_10: mbase_atual_10 = mbase_10_master
-
+mbase_atual_10 = run_cmd("git merge-base HEAD origin/10.0.x")
 date_atual_10 = get_date(mbase_atual_10) if mbase_atual_10 else "????"
 
-# Hierarquia visual
 hierarquia = f"master --({date_10_master})--> 10.0.x --({date_atual_10})--> {branch}"
-
 remote = run_cmd(f"git config --get branch.{branch}.remote")
 if not remote: remote = "origin"
 
 def generate_analysis(msg):
-    # Esta função será preenchida pelo Gemini CLI com base no commit específico
-    # Por padrão, ela retorna placeholders para serem sobrescritos
     return "{{MOTIVACAO}}", "{{IMPLEMENTACAO}}", "{{CONCEITOS}}", "{{ALTERNATIVAS}}", "{{CONCLUSAO}}"
 
 html_out = f"""<!DOCTYPE html>
@@ -63,160 +52,215 @@ html_out = f"""<!DOCTYPE html>
 <title>Relatório de Estudo de Commits - Evolução Arquitetural</title>
 <style>
     :root {{
-        --bg-color: #f4f6f8;
-        --sidebar-bg: #1e293b;
-        --sidebar-text: #f8fafc;
-        --text-color: #334155;
-        --text-strong: #0f172a;
+        --bg-color: #ffffff;
+        --sidebar-bg: #000000;
+        --sidebar-text: #ffffff;
+        --text-color: #353740;
+        --text-strong: #000000;
         --code-bg: #0d1117;
-        --border-color: #cbd5e1;
-        --diff-add: rgba(46, 160, 67, 0.15);
+        --border-color: #e5e5e5;
+        --card-bg: #ffffff;
+        --header-bg: #f7f7f8;
+        --topic-bg: #ffffff;
+        --conclusion-bg: #f7f7f8;
+        --diff-add: rgba(16, 163, 127, 0.15);
         --diff-del: rgba(248, 81, 73, 0.15);
-        --diff-add-text: #3fb950;
+        --diff-add-text: #10a37f;
         --diff-del-text: #ff7b72;
-        --accent: #2563eb;
+        --accent: #10a37f;
     }}
+    
+    .dark-mode {{
+        --bg-color: #050505;
+        --text-color: #c5c5d2;
+        --text-strong: #ffffff;
+        --border-color: #2d2d2d;
+        --card-bg: #000000;
+        --header-bg: #0d0d0d;
+        --topic-bg: #000000;
+        --conclusion-bg: #0d0d0d;
+        --accent: #10a37f;
+    }}
+
     body {{
         margin: 0;
-        font-family: 'Inter', 'Segoe UI', sans-serif;
+        font-family: 'Inter', -apple-system, system-ui, sans-serif;
         display: flex;
         height: 100vh;
         overflow: hidden;
         background-color: var(--bg-color);
         color: var(--text-color);
         line-height: 1.6;
+        transition: background-color 0.2s;
     }}
     
     .sidebar {{
-        width: 350px;
+        width: 320px;
         min-width: 150px;
-        max-width: 600px;
+        max-width: 500px;
         background-color: var(--sidebar-bg);
         color: var(--sidebar-text);
         display: flex;
         flex-direction: column;
         overflow: hidden;
         position: relative;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
         z-index: 10;
         flex-shrink: 0;
+        border-right: 1px solid var(--border-color);
     }}
     
     .resizer {{
-        width: 6px;
+        width: 2px;
         cursor: col-resize;
-        background-color: transparent;
+        background-color: var(--border-color);
         transition: background-color 0.2s;
         flex-shrink: 0;
         z-index: 20;
     }}
     .resizer:hover, .resizer.dragging {{
         background-color: var(--accent);
+        width: 4px;
     }}
     
     .sidebar-header {{
-        padding: 20px;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
-        background-color: #0f172a;
+        padding: 32px 24px;
+        background-color: var(--sidebar-bg);
     }}
-    .sidebar-header h2 {{ margin: 0 0 10px 0; font-size: 1.25rem; font-weight: 600; color: #fff; }}
-    .sidebar-header p {{ margin: 5px 0 0 0; font-size: 0.85rem; color: #94a3b8; }}
+    .sidebar-header h2 {{ 
+        margin: 0 0 16px 0; 
+        font-size: 1.1rem; 
+        font-weight: 600; 
+        letter-spacing: -0.02em;
+        text-transform: uppercase;
+        color: var(--accent);
+    }}
+    .sidebar-header p {{ 
+        margin: 8px 0 0 0; 
+        font-size: 0.75rem; 
+        color: #8e8ea0;
+        font-family: 'Courier New', monospace;
+    }}
     
     .nav-links {{
         flex: 1;
         overflow-y: auto;
-        padding: 10px 0;
+        padding: 0 12px 32px 12px;
     }}
     .nav-links a {{
         display: block;
-        padding: 12px 20px;
-        color: #cbd5e1;
+        padding: 10px 16px;
+        color: #acacbe;
         text-decoration: none;
         font-size: 0.85rem;
-        border-left: 4px solid transparent;
+        border-radius: 6px;
+        margin-bottom: 2px;
         white-space: normal;
         word-wrap: break-word;
         line-height: 1.4;
-        transition: all 0.2s ease;
+        transition: all 0.15s ease;
     }}
-    .nav-links a:hover, .nav-links a:active {{
-        background-color: rgba(255,255,255,0.05);
-        border-left-color: var(--accent);
+    .nav-links a:hover {{
+        background-color: #202123;
         color: #fff;
     }}
     
     .content {{
         flex: 1;
         overflow-y: auto;
-        padding: 40px;
+        padding: 64px 80px;
         scroll-behavior: smooth;
     }}
     .commit-section {{
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
-        margin-bottom: 50px;
-        border: 1px solid var(--border-color);
-        overflow: hidden;
+        background: var(--card-bg);
+        margin-bottom: 100px;
+        max-width: 900px;
     }}
     .commit-header {{
-        background-color: #f1f5f9;
-        padding: 20px 30px;
+        margin-bottom: 40px;
+        padding-bottom: 24px;
         border-bottom: 1px solid var(--border-color);
     }}
     .commit-header h1 {{ 
         color: var(--text-strong); 
-        font-size: 1.5rem; 
-        margin: 0 0 10px 0; 
-        line-height: 1.3;
+        font-size: 2.2rem; 
+        margin: 0 0 16px 0; 
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+        font-weight: 700;
+    }}
+    .tech-summary {{
+        font-size: 1.1rem;
+        color: var(--accent);
+        margin: 0;
+        font-weight: 500;
     }}
     
-    .commit-body {{ padding: 30px; }}
+    .commit-body {{ padding: 0; }}
     
     h3 {{ 
-        color: var(--accent); 
-        margin-top: 0; 
-        margin-bottom: 20px;
-        font-size: 1.2rem;
-        border-bottom: 2px solid #e2e8f0;
-        padding-bottom: 8px;
+        color: var(--text-strong); 
+        margin-top: 48px; 
+        margin-bottom: 24px;
+        font-size: 1.4rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
     }}
     
     .topic {{ 
-        margin-bottom: 20px; 
-        background-color: #f8fafc;
-        padding: 15px 20px;
-        border-radius: 8px;
-        border-left: 4px solid #cbd5e1;
+        margin-bottom: 32px; 
+        padding: 0;
     }}
     .topic strong {{ 
         color: var(--text-strong); 
         display: block; 
-        margin-bottom: 8px; 
-        font-size: 1.05rem;
+        margin-bottom: 12px; 
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #8e8ea0;
     }}
+    .topic p {{ margin: 0; font-size: 1.05rem; }}
     
     .conclusion {{
-        background-color: #eff6ff;
-        border-left: 4px solid var(--accent);
-        padding: 15px 20px;
+        background-color: var(--conclusion-bg);
+        border: 1px solid var(--border-color);
+        padding: 24px;
         border-radius: 8px;
-        margin-bottom: 30px;
-        margin-top: 30px;
+        margin: 48px 0;
     }}
-    .conclusion strong {{ color: var(--accent); }}
+    .conclusion p {{ margin: 0; font-size: 1rem; color: var(--text-strong); }}
+    .conclusion strong {{ color: var(--accent); margin-right: 8px; }}
+
+    .theme-toggle {{
+        background: #202123;
+        border: 1px solid #444654;
+        color: #fff;
+        padding: 10px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.75rem;
+        margin-top: 24px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        justify-content: center;
+        transition: all 0.2s;
+    }}
+    .theme-toggle:hover {{ background: #444654; }}
     
+    /* Code Diff Styles */
     pre.code-diff {{
         background-color: var(--code-bg);
         color: #e6edf3;
-        padding: 20px;
-        border-radius: 8px;
+        padding: 24px;
+        border-radius: 12px;
         overflow-x: auto;
-        font-family: 'Fira Code', 'Courier New', Courier, monospace;
+        font-family: 'Fira Code', 'Menlo', monospace;
         font-size: 0.85rem;
-        line-height: 1.5;
+        line-height: 1.6;
         margin: 0;
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        border: 1px solid var(--border-color);
     }}
     .diff-line {{ display: flex; }}
     .diff-line .text {{ padding-left: 5px; white-space: pre; }}
@@ -224,7 +268,20 @@ html_out = f"""<!DOCTYPE html>
     .diff-line.add .text {{ color: var(--diff-add-text); }}
     .diff-line.del {{ background-color: var(--diff-del); display: block; }}
     .diff-line.del .text {{ color: var(--diff-del-text); }}
-    .diff-line.info {{ color: #8b949e; font-style: italic; border-top: 1px dashed #30363d; margin-top: 10px; padding-top: 10px; display: block; }}
+    .diff-line.info {{ color: #565869; font-style: italic; border-top: 1px solid #2d2d2d; margin-top: 16px; padding-top: 16px; display: block; }}
+    
+    .diff-line.file-header {{
+        background-color: rgba(16, 163, 127, 0.1);
+        color: var(--accent);
+        font-weight: 600;
+        border: 1px solid var(--accent);
+        border-radius: 4px;
+        margin-top: 32px;
+        padding: 8px 12px;
+        display: block;
+        font-size: 0.85rem;
+    }}
+    .diff-line.file-header:first-child {{ margin-top: 0; }}
 </style>
 </head>
 <body>
@@ -234,6 +291,9 @@ html_out = f"""<!DOCTYPE html>
         <h2>Aulas de Arquitetura</h2>
         <p><strong>Hierarquia:</strong> {hierarquia}</p>
         <p><strong>Remoto:</strong> {remote}</p>
+        <button class="theme-toggle" id="themeToggle">
+            <span id="themeIcon">🌙</span> <span id="themeText">Modo Escuro</span>
+        </button>
     </div>
     <div class="nav-links">
 """
@@ -255,11 +315,12 @@ for sha, msg in commit_data:
         diff_out = "Não foi possível carregar o diff."
 
     diff_lines = diff_out.split('\n')
-    
     formatted_diff = ""
     for line in diff_lines:
         safe_line = html.escape(line)
-        if line.startswith('+') and not line.startswith('+++'):
+        if line.startswith('diff --git'):
+            formatted_diff += f'<div class="diff-line file-header">{safe_line}</div>'
+        elif line.startswith('+') and not line.startswith('+++'):
             formatted_diff += f'<div class="diff-line add"><span class="text">{safe_line}</span></div>'
         elif line.startswith('-') and not line.startswith('---'):
             formatted_diff += f'<div class="diff-line del"><span class="text">{safe_line}</span></div>'
@@ -268,27 +329,21 @@ for sha, msg in commit_data:
         else:
             formatted_diff += f'<div class="diff-line"><span class="text">{safe_line}</span></div>'
 
-    # Gemini preencherá estes campos dinamicamente durante a execução da skill
     m, i, c, a, c_aula = generate_analysis(msg)
 
     html_out += f'''
     <div class="commit-section" id="aula-{sha}">
         <div class="commit-header">
-            <h1>[{sha[:8]}] - {html.escape(msg)}</h1>
+            <h1>{html.escape(msg)}</h1>
+            <p class="tech-summary">{sha[:8]}</p>
         </div>
         
         <div class="commit-body">
-            <h3>Explicação Detalhada</h3>
-            
-            <div class="topic"><strong>Motivação:</strong><p>{m}</p></div>
-            <div class="topic"><strong>Implementação:</strong><p>{i}</p></div>
-            <div class="topic"><strong>Conceitos e Documentação:</strong><p>{c}</p></div>
-            <div class="topic"><strong>Alternativas e Refatoração:</strong><p>{a}</p></div>
-            
-            <div class="conclusion">
-                <p><strong>Conclusão da Aula:</strong> {c_aula}</p>
-            </div>
-            
+            <div class="topic"><strong>Motivação</strong><p>{m}</p></div>
+            <div class="topic"><strong>Implementação</strong><p>{i}</p></div>
+            <div class="topic"><strong>Conceitos e Documentação</strong><p>{c}</p></div>
+            <div class="topic"><strong>Alternativas e Refatoração</strong><p>{a}</p></div>
+            <div class="conclusion"><p><strong>Conclusão da Aula</strong> {c_aula}</p></div>
             <h3>Código da Aula (Diff)</h3>
             <pre class="code-diff">{formatted_diff}</pre>
         </div>
@@ -316,9 +371,7 @@ html_out += """
     const mouseMoveHandler = function (e) {
         const dx = e.clientX - x;
         const newWidth = w + dx;
-        if (newWidth > 150 && newWidth < 600) {
-            sidebar.style.width = `${newWidth}px`;
-        }
+        if (newWidth > 150 && newWidth < 600) { sidebar.style.width = `${newWidth}px`; }
     };
 
     const mouseUpHandler = function () {
@@ -330,6 +383,26 @@ html_out += """
     };
 
     resizer.addEventListener('mousedown', mouseDownHandler);
+
+    // Theme Toggle Logic
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    const themeText = document.getElementById('themeText');
+    const body = document.body;
+
+    themeToggle.addEventListener('click', () => {
+        body.classList.toggle('dark-mode');
+        const isDark = body.classList.contains('dark-mode');
+        themeIcon.innerText = isDark ? '☀️' : '🌙';
+        themeText.innerText = isDark ? 'Modo Claro' : 'Modo Escuro';
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+
+    if (localStorage.getItem('theme') === 'dark') {
+        body.classList.add('dark-mode');
+        themeIcon.innerText = '☀️';
+        themeText.innerText = 'Modo Claro';
+    }
 </script>
 </body>
 </html>
