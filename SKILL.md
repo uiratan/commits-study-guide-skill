@@ -21,12 +21,24 @@ Para **CADA** commit no intervalo solicitado:
 2.  Redija uma análise técnica contendo:
     *   **Motivação**: Por que essa mudança foi feita? (Seja específico sobre o problema resolvido).
     *   **Implementação**: Como foi feito tecnicamente? Quais classes/arquivos foram o foco?
-    *   **Conceitos**: Explique as tecnologias envolvidas e inclua **links obrigatórios** 🔗 para a documentação oficial.
-    *   **Alternativas**: O que mais poderia ter sido feito e quais os prós/contras?
-    *   **Conclusão**: O aprendizado chave deste commit.
+    *   **Conceitos**: Explicação técnica densa. Se for uma lib (ex: Swagger), explique como ela se integra ao código, mostre trechos de configuração (XML/Java/YAML) e inclua **links obrigatórios** 🔗 para a documentação oficial.
+    *   **Alternativas**: Liste pelo menos **2 trade-offs** (Prós e Contras) para cada abordagem alternativa mencionada.
 
 ### Passo 2: Geração do Payload
-Prepare um objeto JSON contendo todas as análises. Use o SHA completo como chave.
+Prepare um objeto JSON contendo todas as análises. Use o **SHA completo** como chave principal.
+
+**Schema Obrigatório e Exemplo de Profundidade:**
+```json
+{
+  "SHA_COMPLETO": {
+    "m": "Motivação detalhada...",
+    "i": "Explicação do fluxo de arquivos...",
+    "c": "<ul><li><strong>Swagger Core:</strong> Integração via dependência <code>springdoc-openapi-ui</code>. Explicar como as anotações <code>@Operation</code> mapeiam o endpoint... <a href='URL'>Doc Oficial</a></li></ul>",
+    "a": "<ul><li><strong>Manter plugin antigo:</strong> <br> - Pró: Menor esforço inicial. <br> - Contra: Incompatível com Jakarta EE; bloqueia atualizações de segurança.</li></ul>",
+    "conclusao": "Evolução..."
+  }
+}
+```
 
 ### Passo 3: Geração do Relatório
 Injete o payload via variável de ambiente `ANALYSIS_PAYLOAD` e execute o motor:

@@ -99,8 +99,19 @@
             word-wrap: break-word;
             transition: all 0.2s;
         }
+        .nav-sha {
+            font-family: monospace;
+            font-weight: 700;
+            font-size: 0.7rem;
+            background: var(--conclusion-bg);
+            padding: 2px 4px;
+            border-radius: 4px;
+            margin-right: 8px;
+            opacity: 0.8;
+        }
         .nav-links a:hover { background-color: var(--topic-bg); color: var(--text-strong); }
         .nav-links a.active { background-color: var(--accent); color: #fff; }
+        .nav-links a.active .nav-sha { background: rgba(255,255,255,0.2); color: #fff; }
 
         .theme-toggle {
             background: var(--topic-bg);

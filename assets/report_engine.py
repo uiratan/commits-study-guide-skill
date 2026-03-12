@@ -49,7 +49,7 @@ remote = run_cmd(f"git config --get branch.{branch_atual}.remote") or "origin"
 nav_html = ""
 content_html = ""
 for i, (sha, msg) in enumerate(commit_data):
-    nav_html += f'<a href="#aula-{sha}">{i+1}. {html.escape(msg)}</a>\n'
+    nav_html += f'<a href="#aula-{sha}"><span class="nav-sha">{sha[:7]}</span> {i+1}. {html.escape(msg)}</a>\n'
     
     # Extrair Diff
     diff_raw = run_cmd(f"git show {sha} --format=''")
@@ -62,24 +62,31 @@ for i, (sha, msg) in enumerate(commit_data):
         elif any(line.startswith(p) for p in ['diff ', 'index ', '---', '+++', '@@ ']): formatted_diff += f'<div class="diff-line info">{s}</div>'
         else: formatted_diff += f'<div class="diff-line">{s}</div>'
 
-    # Análise injetada
-    data = analyses.get(sha, analyses.get(sha[:8], {
+    # Análise injetada com robustez (completo, 8 chars, 7 chars)
+    data = analyses.get(sha, analyses.get(sha[:8], analyses.get(sha[:7], {
         "m": "Motivação não analisada pelo agente.",
         "i": "Implementação padrão.",
         "c": "<ul><li>Sem conceitos.</li></ul>",
         "a": "<ul><li>Sem alternativas.</li></ul>",
         "conclusao": "Evolução."
-    }))
+    })))
+
+    # Fallback para chaves por extenso
+    m = data.get('m', data.get('motivacao', 'Não detalhado.'))
+    i = data.get('i', data.get('implementacao', 'Padrão.'))
+    c = data.get('c', data.get('conceitos', '<ul><li>Sem conceitos.</li></ul>'))
+    a = data.get('a', data.get('alternativas', '<ul><li>Sem alternativas.</li></ul>'))
+    concl = data.get('conclusao', 'Evolução.')
 
     content_html += f'''
     <div class="commit-section" id="aula-{sha}">
         <div class="commit-header"><div class="sha">{sha[:8]}</div><h1>{html.escape(msg)}</h1></div>
         <div class="commit-body">
-            <div class="topic"><strong>Motivação</strong><p>{data['m']}</p></div>
-            <div class="topic"><strong>Implementação</strong><p>{data['i']}</p></div>
-            <div class="topic"><strong>Conceitos e Documentação</strong>{data['c']}</div>
-            <div class="topic"><strong>Alternativas e Refatoração</strong>{data['a']}</div>
-            <div class="conclusion"><p>💡 {data['conclusao']}</p></div>
+            <div class="topic"><strong>Motivação</strong><p>{m}</p></div>
+            <div class="topic"><strong>Implementação</strong><p>{i}</p></div>
+            <div class="topic"><strong>Conceitos e Documentação</strong>{c}</div>
+            <div class="topic"><strong>Alternativas e Refatoração</strong>{a}</div>
+            <div class="conclusion"><p>💡 {concl}</p></div>
             <h3>Código da Aula</h3><pre class="code-diff">{formatted_diff}</pre>
         </div>
     </div>'''
